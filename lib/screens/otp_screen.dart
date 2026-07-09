@@ -1,0 +1,179 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../services/twist_api.dart';
+import '../theme/app_theme.dart';
+import '../widgets/waveform_background.dart';
+import 'home_screen.dart';
+
+class OtpScreen extends StatefulWidget {
+  final TwistApi api;
+  final String phone;
+  const OtpScreen({super.key, required this.api, required this.phone});
+
+  @override
+  State<OtpScreen> createState() => _OtpScreenState();
+}
+
+class _OtpScreenState extends State<OtpScreen> {
+  final _digits = List.generate(6, (_) => TextEditingController());
+  final _nodes = List.generate(6, (_) => FocusNode());
+  bool _loading = false;
+  String? _error;
+  int _secondsLeft = 60;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _secondsLeft = 60;
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_secondsLeft == 0) {
+        t.cancel();
+      } else {
+        setState(() => _secondsLeft--);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    for (final c in _digits) {
+      c.dispose();
+    }
+    for (final n in _nodes) {
+      n.dispose();
+    }
+    super.dispose();
+  }
+
+  String get _code => _digits.map((c) => c.text).join();
+
+  Future<void> _verify() async {
+    if (_code.length != 6) {
+      setState(() => _error = 'أدخل الكود كاملاً');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final ok = await widget.api.verifyCode(widget.phone, _code);
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (!ok) {
+      setState(() => _error = 'الكود غير صحيح، حاول مرة أخرى');
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => HomeScreen(api: widget.api)),
+    );
+  }
+
+  Future<void> _resend() async {
+    await widget.api.sendCode(widget.phone);
+    _startCountdown();
+  }
+
+  Widget _digitBox(int i) {
+    return SizedBox(
+      width: 46,
+      height: 56,
+      child: TextField(
+        controller: _digits[i],
+        focusNode: _nodes[i],
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        maxLength: 1,
+        style: Theme.of(context).textTheme.headlineMedium,
+        decoration: const InputDecoration(counterText: '', contentPadding: EdgeInsets.zero),
+        onChanged: (v) {
+          if (v.isNotEmpty && i < 5) {
+            _nodes[i + 1].requestFocus();
+          } else if (v.isEmpty && i > 0) {
+            _nodes[i - 1].requestFocus();
+          }
+          if (_code.length == 6) _verify();
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: WaveformBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  color: AppColors.textSecondary,
+                ),
+                Text('كود التحقق', style: Theme.of(context).textTheme.displayLarge)
+                    .animate()
+                    .fadeIn()
+                    .slideY(begin: 0.2, end: 0),
+                const SizedBox(height: 8),
+                Text(
+                  'أدخل الكود المرسل إلى ${widget.phone}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 32),
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(6, _digitBox),
+                  ),
+                ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.15, end: 0),
+                if (_error != null) ...[
+                  const SizedBox(height: 14),
+                  Text(_error!, style: const TextStyle(color: AppColors.danger)),
+                ],
+                const SizedBox(height: 28),
+                ElevatedButton(
+                  onPressed: _loading ? null : _verify,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2.4, color: AppColors.bg),
+                        )
+                      : const Text('تأكيد'),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: TextButton(
+                    onPressed: _secondsLeft == 0 ? _resend : null,
+                    child: Text(
+                      _secondsLeft == 0 ? 'إعادة إرسال الكود' : 'إعادة الإرسال خلال $_secondsLeft ث',
+                      style: TextStyle(
+                        color: _secondsLeft == 0 ? AppColors.signalSoft : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
