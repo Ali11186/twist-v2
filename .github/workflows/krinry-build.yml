@@ -44,6 +44,9 @@ jobs:
       - name: Create android folder
         run: flutter create --platforms android .
 
+      - name: Generate app icons
+        run: dart run flutter_launcher_icons
+
       - name: Build
         run: |
           TYPE="${{ github.event.inputs.build_type }}"
