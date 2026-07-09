@@ -94,10 +94,22 @@ class _OtpScreenState extends State<OtpScreen> {
         focusNode: _nodes[i],
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
-        maxLength: 1,
+        autofillHints: i == 0 ? const [AutofillHints.oneTimeCode] : null,
+        maxLength: i == 0 ? 6 : 1,
         style: Theme.of(context).textTheme.headlineMedium,
         decoration: const InputDecoration(counterText: '', contentPadding: EdgeInsets.zero),
         onChanged: (v) {
+          if (v.length > 1) {
+            final clean = v.replaceAll(RegExp(r'\D'), '');
+            for (var j = 0; j < _digits.length; j++) {
+              _digits[j].text = j < clean.length ? clean[j] : '';
+            }
+            _digits[0].text = clean.length > 1 ? clean[0] : clean;
+            FocusScope.of(context).unfocus();
+            TextInput.finishAutofillContext();
+            if (_code.length == 6) _verify();
+            return;
+          }
           if (v.isNotEmpty && i < 5) {
             _nodes[i + 1].requestFocus();
           } else if (v.isEmpty && i > 0) {
@@ -137,9 +149,11 @@ class _OtpScreenState extends State<OtpScreen> {
                 const SizedBox(height: 32),
                 Directionality(
                   textDirection: TextDirection.ltr,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(6, _digitBox),
+                  child: AutofillGroup(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(6, _digitBox),
+                    ),
                   ),
                 ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.15, end: 0),
                 if (_error != null) ...[
