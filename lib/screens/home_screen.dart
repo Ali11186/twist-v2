@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/twist_api.dart';
 import '../theme/app_theme.dart';
 import '../widgets/coin_counter.dart';
 import 'achievements_screen.dart';
+import 'login_screen.dart';
 import 'redeem_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,6 +36,38 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('تسجيل الخروج', style: GoogleFonts.cairo(color: AppColors.textPrimary)),
+        content: Text(
+          'هيتم تسجيل خروجك عشان تقدر تدخل برقم تاني.',
+          style: GoogleFonts.tajawal(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('إلغاء', style: GoogleFonts.tajawal(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('تسجيل الخروج', style: GoogleFonts.tajawal(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -42,7 +76,20 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 24, bottom: 8),
+              padding: const EdgeInsets.fromLTRB(20, 12, 12, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout_rounded, color: AppColors.textSecondary),
+                    tooltip: 'تسجيل الخروج',
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 8),
               child: _loadingBalance
                   ? const SizedBox(
                       height: 90,
