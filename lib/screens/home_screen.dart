@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/twist_api.dart';
 import '../theme/app_theme.dart';
 import '../widgets/coin_counter.dart';
@@ -68,6 +69,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _openChannel() async {
+    final uri = Uri.parse('https://t.me/ahrgq');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,8 +86,16 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 12, 0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  TextButton.icon(
+                    onPressed: _openChannel,
+                    icon: const Icon(Icons.send_rounded, size: 18, color: AppColors.signalSoft),
+                    label: Text(
+                      'قناتنا على تليجرام',
+                      style: GoogleFonts.tajawal(color: AppColors.signalSoft, fontSize: 13),
+                    ),
+                  ),
                   IconButton(
                     onPressed: _logout,
                     icon: const Icon(Icons.logout_rounded, color: AppColors.textSecondary),

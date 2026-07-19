@@ -10,7 +10,7 @@ class TwistApi {
   String accessToken = '';
   String tgToken = '';
   String tgRefreshToken = '';
-  String tgDeviceId = '22821093';
+  String tgDeviceId = '26284330';
 
   TwistApi() : sessionId = _uuid();
 
@@ -22,9 +22,9 @@ class TwistApi {
   }
 
   Map<String, String> get _headers => {
-        'user-agent': 'Twist-Mobile/10.10.49 (Android; 12; SM-A217F; music; ar-AE)',
-        'app_version': '10.10.49',
-        'appversion': '10.10.49',
+        'user-agent': 'Twist-Mobile/11.2.10 (Android; 12; SM-A217F; music; ar-AE)',
+        'app_version': '11.2.10',
+        'appversion': '11.2.10',
         'channel': 'mobileapp',
         'content-type': 'application/json',
         'platform': 'android',
@@ -48,43 +48,51 @@ class TwistApi {
   }
 
   Future<bool> sendCode(String phone) async {
-    final res = await http.post(
-      Uri.parse('$_base/music/Dlogin/sendCode'),
-      headers: _headers,
-      body: jsonEncode({'dial': phone}),
-    );
-    return res.statusCode == 200;
+    try {
+      final res = await http.post(
+        Uri.parse('$_base/music/Dlogin/sendCode'),
+        headers: _headers,
+        body: jsonEncode({'dial': phone}),
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<bool> verifyCode(String phone, String code) async {
-    final res = await http.post(
-      Uri.parse('$_base/music/Dlogin/verify'),
-      headers: _headers,
-      body: jsonEncode({
-        'dial': phone,
-        'verifyCode': code,
-        'socialServiceName': '',
-        'socialServiceToken': '',
-      }),
-    );
-    if (res.statusCode != 200) return false;
+    try {
+      final res = await http.post(
+        Uri.parse('$_base/music/Dlogin/verify'),
+        headers: _headers,
+        body: jsonEncode({
+          'dial': phone,
+          'verifyCode': code,
+          'socialServiceName': '',
+          'socialServiceToken': '',
+        }),
+      );
+      if (res.statusCode != 200) return false;
 
-    final data = jsonDecode(res.body);
-    String? token;
-    if (data is Map) {
-      token = data['token'] ?? data['authorization'];
-    }
-    token ??= res.headers['authorization']?.replaceFirst('Bearer ', '');
-    if (token == null) return false;
+      final data = jsonDecode(res.body);
+      String? token;
+      if (data is Map) {
+        token = data['token'] ?? data['authorization'];
+      }
+      token ??= res.headers['authorization']?.replaceFirst('Bearer ', '');
+      if (token == null) return false;
 
-    authorization = token.replaceFirst('Bearer ', '');
-    if (data is Map) {
-      accessToken = data['accessToken'] ?? '';
-      tgToken = data['tgToken'] ?? data['tg_token'] ?? '';
-      tgRefreshToken = data['tgRefreshToken'] ?? data['tg_refresh_token'] ?? '';
-      tgDeviceId = data['tgDeviceId'] ?? data['tg_device_id'] ?? tgDeviceId;
+      authorization = token.replaceFirst('Bearer ', '');
+      if (data is Map) {
+        accessToken = data['accessToken'] ?? '';
+        tgToken = data['tgToken'] ?? data['tg_token'] ?? '';
+        tgRefreshToken = data['tgRefreshToken'] ?? data['tg_refresh_token'] ?? '';
+        tgDeviceId = data['tgDeviceId'] ?? data['tg_device_id'] ?? tgDeviceId;
+      }
+      return true;
+    } catch (_) {
+      return false;
     }
-    return true;
   }
 
   Future<int> getBalance() async {
@@ -104,27 +112,32 @@ class TwistApi {
   }
 
   Future<List<Achievement>> getAchievements() async {
-    final res = await http.get(
-      Uri.parse('$_base/music/user/loyalty/achievements/v2'),
-      headers: _headers,
-    );
-    if (res.statusCode != 200) return [];
-    final data = jsonDecode(res.body);
-    final categories = data is Map ? (data['badges'] ?? []) : (data is List ? data : []);
-    final all = <Achievement>[];
-    for (final cat in categories) {
-      final tasks = (cat is Map ? cat['badges'] : null) ?? [];
-      for (final t in tasks) {
-        if (t is Map) {
-          all.add(Achievement(
-            id: '${t['id']}',
-            name: t['name'] ?? t['title'] ?? 'مهمة',
-            rewarded: t['rewarded'] == true,
-          ));
+    try {
+      final res = await http.get(
+        Uri.parse('$_base/music/user/loyalty/achievements/v2'),
+        headers: _headers,
+      );
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body);
+      final categories = data is Map ? (data['badges'] ?? []) : (data is List ? data : []);
+      final all = <Achievement>[];
+      for (final cat in categories) {
+        final tasks = (cat is Map ? cat['badges'] : null) ?? [];
+        for (final t in tasks) {
+          if (t is Map) {
+            all.add(Achievement(
+              id: '${t['id']}',
+              name: t['title'] ?? t['name'] ?? 'مهمة',
+              rewarded: t['rewarded'] == true,
+              coins: int.tryParse('${t['coins'] ?? 0}') ?? 0,
+            ));
+          }
         }
       }
+      return all;
+    } catch (_) {
+      return [];
     }
-    return all;
   }
 
   Future<bool> completeAchievement(String taskId) async {
@@ -156,7 +169,8 @@ class Achievement {
   final String id;
   final String name;
   final bool rewarded;
-  Achievement({required this.id, required this.name, required this.rewarded});
+  final int coins;
+  Achievement({required this.id, required this.name, required this.rewarded, this.coins = 0});
 }
 
 class RedeemOption {
@@ -171,7 +185,7 @@ class RedeemOption {
     RedeemOption(300, 150, 'EAND_150_UNITS_ID_11'),
     RedeemOption(600, 300, 'EAND_300_UNITS_ID_12'),
     RedeemOption(1000, 500, 'EAND_500_UNITS_ID_13'),
-    RedeemOption(2000, 1000, 'EAND_1000_UNITS_ID_14'),
+    RedeemOption(2000, 1000, 'EAND_1000_UNITS_ID_15'),
   ];
 
   static List<RedeemOption> availableFor(int balance) =>
