@@ -44,7 +44,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       if (ok) {
         setState(() {
           final idx = _items.indexWhere((e) => e.id == a.id);
-          _items[idx] = Achievement(id: a.id, name: a.name, rewarded: true);
+          _items[idx] = Achievement(id: a.id, name: a.name, rewarded: true, coins: a.coins);
         });
       }
       await Future.delayed(const Duration(milliseconds: 250));

@@ -20,6 +20,57 @@ on:
         required: false
         default: 'all'
         type: choice
+        options: [all
+cat > .github/workflows/krinry-build.yml << 'EOF'
+name: krinry Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options: [debug, profile, release]
+      output_type:
+        description: 'Output type'
+        required: true
+        default: 'apk'
+        type: choice
+        options: [apk, appbundle, apk-split]
+      target_platform:
+        description: 'Target platform'
+        required: false
+        default: 'all'
+        type: choice
+
+
+
+
+cat > .github/workflows/krinry-build.yml << 'EOF'
+name: krinry Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options: [debug, profile, release]
+      output_type:
+        description: 'Output type'
+        required: true
+        default: 'apk'
+        type: choice
+        options: [apk, appbundle, apk-split]
+      target_platform:
+        description: 'Target platform'
+        required: false
+        default: 'all'
+        type: choice
         options: [all, android-arm64, android-arm, android-x64]
 
 jobs:
